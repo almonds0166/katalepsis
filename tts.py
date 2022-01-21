@@ -79,6 +79,18 @@ def check_chapter(arg):
 
    return arg
 
+def check_rate(arg):
+   """confirm rate is in [0.25, 4.0] interval"""
+   rate = float(arg)
+   if not 0.25 <= rate <= 4.0:
+      msg = (
+         "TTS rate only supported for floats in the range 0.25 (slow) to "
+         "4.0 (fast). Default is 1.0."
+      )
+      raise argparse.ArgumentTypeError(msg)
+
+   return rate
+
 def parser():
    gist = "Convert Katalepsis chapters to audio files."
    parser = argparse.ArgumentParser(description=gist)
@@ -87,6 +99,8 @@ def parser():
       help="chapter (arc.chapter)")
    parser.add_argument("outfile", metavar="OUT", type=Path, nargs="?",
       help="output audio file name")
+   parser.add_argument("-r", "--rate", metavar="R", type=check_rate,
+      help="speech rate multiplier (default 1.0)", default=1.0)
    parser.add_argument("-v", "--verbose", action="count", default=0)
 
    return parser
@@ -126,7 +140,12 @@ def main():
 
    voices = engine.getProperty("voices")
    engine.setProperty("voice", voices[1].id)
-   #engine.setProperty("rate", 125)
+   
+   # set TTS rate
+   _rate = engine.getProperty("rate")
+   rate = round(args.rate * _rate)
+   if rate != _rate:
+      engine.setProperty("rate", rate)
 
    engine.save_to_file(txt, args.outfile.as_posix())
    engine.runAndWait()
